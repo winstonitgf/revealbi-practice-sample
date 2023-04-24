@@ -8,15 +8,29 @@ declare let $: any;
 export class AppComponent implements AfterViewInit {
   title = 'reveal-client-sidex';
   @ViewChild('revealView') el!: ElementRef;
-
+  revealView: any = undefined;
   ngAfterViewInit(): void {
-    $.ig.RevealSdkSettings.setBaseUrl("http://localhost:8080");
+    $.ig.RevealSdkSettings.setBaseUrl("http://localhost:8081");
     $.ig.RevealSdkSettings.theme = new $.ig.MountainDarkTheme();
-    var revealView = new $.ig.RevealView(this.el.nativeElement);
+    $.ig.RevealSdkSettings.setAdditionalHeadersProvider(function () {
+      var headers: any = {};
+      headers["user-id"] = "1"
+      return headers;
+    });
+
+    this.revealView = new $.ig.RevealView(this.el.nativeElement);
+
+
+    this.loadUserOneDashboard();
+  }
+
+  // after fetch user context from server, we can determine which dashboard to load base on user context
+  public loadUserOneDashboard() {
+
     $.ig.RVDashboard.loadDashboard("新的儀表板", (dashboard: any) => {
 
-      revealView.dashboard = dashboard;
-      revealView.onDataSourcesRequested = (callback: any) => {
+      this.revealView.dashboard = dashboard;
+      this.revealView.onDataSourcesRequested = (callback: any) => {
         var sqlDataSource = new $.ig.RVMySqlDataSource();
         sqlDataSource.host = "localhost";
         sqlDataSource.port = "3306"
@@ -31,7 +45,29 @@ export class AppComponent implements AfterViewInit {
       };
     });
 
+  }
 
+  // after fetch user context from server, we can determine which dashboard to load base on user context
+  public loadUserTwoDashboard() {
+    $.ig.RVDashboard.loadDashboard("MySQL", (dashboard: any) => {
 
+      this.revealView.dashboard = dashboard;
+      this.revealView.onDataSourcesRequested = (callback: any) => {
+        var sqlDataSource = new $.ig.RVMySqlDataSource();
+        sqlDataSource.host = "localhost";
+        sqlDataSource.port = "3306"
+        sqlDataSource.database = "sso";
+        sqlDataSource.title = "MySQL";
+
+        var localFileItem = new $.ig.RVLocalFileDataSourceItem();
+        localFileItem.uri = "local:/Attendee.xlsx";
+        var excelDataSourceItem = new $.ig.RVExcelDataSourceItem(localFileItem);
+        excelDataSourceItem.title = "Attendee";
+        callback(new $.ig.RevealDataSources([sqlDataSource], [excelDataSourceItem], true));
+      };
+    });
+  }
+  public createNewDashboard() {
+    this.revealView.dashboard = new $.ig.RVDashboard();
   }
 }
